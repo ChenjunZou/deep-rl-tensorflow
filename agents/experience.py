@@ -3,6 +3,10 @@
 import random
 import numpy as np
 
+import logging
+logger = logging.getLogger()
+
+
 class Experience(object):
   def __init__(self, data_format, batch_size, history_length, memory_size, observation_dims):
     self.data_format = data_format
@@ -29,6 +33,9 @@ class Experience(object):
     self.terminals[self.current] = terminal
     self.count = max(self.count, self.current + 1)
     self.current = (self.current + 1) % self.memory_size
+    if terminal:
+      logger.debug("reward is %s in terminal state, change to -1" % reward)
+      self.rewards[self.current] = -1
 
   def sample(self):
     indexes = []
@@ -37,8 +44,9 @@ class Experience(object):
         index = random.randint(self.history_length, self.count - 1)
         if index >= self.current and index - self.history_length < self.current:
           continue
-        if self.terminals[(index - self.history_length):index].any():
-          continue
+        # check if terminal has a negative reward.
+        # if self.terminals[(index - self.history_length):index].any():
+        #   continue
         break
       
       self.prestates[len(indexes), ...] = self.retreive(index - 1)

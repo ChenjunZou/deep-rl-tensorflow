@@ -8,7 +8,9 @@ from networks.cnn import CNN
 from networks.mlp import MLPSmall
 from agents.statistic import Statistic
 from environments.environment import ToyEnvironment, AtariEnvironment
+import logging.config
 
+logging.config.fileConfig('logging_config.ini')
 flags = tf.app.flags
 
 # Deep q Network
@@ -28,6 +30,7 @@ flags.DEFINE_integer('min_r', -1, 'The minimum value of clipped reward')
 flags.DEFINE_string('observation_dims', '[80, 80]', 'The dimension of gym observation')
 flags.DEFINE_boolean('random_start', True, 'Whether to start with random state')
 flags.DEFINE_boolean('use_cumulated_reward', False, 'Whether to use cumulated reward or not')
+flags.DEFINE_boolean('remove_header', False, 'Whether to remove noisy header information')
 
 # Training
 flags.DEFINE_boolean('is_train', True, 'Whether to do training or testing')
@@ -111,7 +114,7 @@ def main(_):
     conf.data_format = 'NHWC'
 
   model_dir = get_model_dir(conf,
-      ['use_gpu', 'max_random_start', 'n_worker', 'is_train', 'memory_size', 'gpu_fraction',
+      exceptions=['use_gpu', 'max_random_start', 'n_worker', 'is_train', 'memory_size', 'gpu_fraction',
        't_save', 't_train', 'display', 'log_level', 'random_seed', 'tag', 'scale'])
 
   # start
@@ -126,11 +129,11 @@ def main(_):
     if any(name in conf.env_name for name in ['Corridor', 'FrozenLake']) :
       env = ToyEnvironment(conf.env_name, conf.n_action_repeat,
                            conf.max_random_start, conf.observation_dims,
-                           conf.data_format, conf.display, conf.use_cumulated_reward)
+                           conf.data_format, conf.display, conf.use_cumulated_reward, conf.remove_header)
     else:
       env = AtariEnvironment(conf.env_name, conf.n_action_repeat,
                              conf.max_random_start, conf.observation_dims,
-                             conf.data_format, conf.display, conf.use_cumulated_reward)
+                             conf.data_format, conf.display, conf.use_cumulated_reward, conf.remove_header)
 
     if conf.network_header_type in ['nature', 'nips']:
       pred_network = CNN(sess=sess,

@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class Environment(object):
   def __init__(self, env_name, n_action_repeat, max_random_start,
-               observation_dims, data_format, display, use_cumulated_reward=False):
+               observation_dims, data_format, display, use_cumulated_reward=False, remove_header=False):
     self.env = gym.make(env_name)
 
     self.n_action_repeat = n_action_repeat
@@ -29,6 +29,7 @@ class Environment(object):
     self.data_format = data_format
     self.observation_dims = observation_dims
     self.use_cumulated_reward = use_cumulated_reward
+    self.remove_header = remove_header
 
     if hasattr(self.env, 'get_action_meanings'):
       logger.info("Using %d actions : %s" % (self.action_size, ", ".join(self.env.get_action_meanings())))
@@ -55,9 +56,9 @@ class ToyEnvironment(Environment):
 
 class AtariEnvironment(Environment):
   def __init__(self, env_name, n_action_repeat, max_random_start,
-               observation_dims, data_format, display, use_cumulated_reward):
+               observation_dims, data_format, display, use_cumulated_reward, remove_header):
     super(AtariEnvironment, self).__init__(env_name, 
-        n_action_repeat, max_random_start, observation_dims, data_format, display, use_cumulated_reward)
+        n_action_repeat, max_random_start, observation_dims, data_format, display, use_cumulated_reward, remove_header)
 
   def new_game(self, from_random_game=False):
     screen = self.env.reset()
@@ -101,8 +102,14 @@ class AtariEnvironment(Environment):
       cumulated_reward += reward
       current_lives = self.env.unwrapped.ale.lives()
 
-      if is_training and self.lives > current_lives:
+      if current_lives == 0:
         terminal = True
+
+      # if is_training and  current_lives < self.lives:
+      #   terminal = True
+
+      if current_lives < self.lives:
+        self.env.step(1)
 
       if terminal: break
 
@@ -112,12 +119,14 @@ class AtariEnvironment(Environment):
     if not terminal:
       self.lives = current_lives
 
-    if self.use_cumulated_reward:
+    if self.use_cumulated_reward: #should set to be true, when n_action_repeat > 1
       return self.preprocess(screen, terminal), cumulated_reward, terminal, {}
     else:
       return self.preprocess(screen, terminal), reward, terminal, {}
 
   def preprocess(self, raw_screen, terminal):
+    if self.remove_header:
+      raw_screen = raw_screen[20:, :, :]
     y = 0.2126 * raw_screen[:, :, 0] + 0.7152 * raw_screen[:, :, 1] + 0.0722 * raw_screen[:, :, 2]
     y = y.astype(np.uint8)
     y_screen = imresize(y, self.observation_dims)
