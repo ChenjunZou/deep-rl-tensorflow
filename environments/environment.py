@@ -72,6 +72,7 @@ class AtariEnvironment(Environment):
     else:
       self.lives = self.env.unwrapped.ale.lives()
       terminal = False
+      screen, reward, terminal, _ = self.env.step(1)
       return self.preprocess(screen, terminal), 0, terminal
 
   def new_random_game(self):
@@ -82,6 +83,7 @@ class AtariEnvironment(Environment):
 
       if terminal: logger.warning("warning: terminal signal received after %d 0-steps", idx)
 
+    screen, reward, terminal, _ = self.env.step(1)
     if self.display:
       self.env.render()
 
@@ -102,16 +104,19 @@ class AtariEnvironment(Environment):
       cumulated_reward += reward
       current_lives = self.env.unwrapped.ale.lives()
 
+      if current_lives < self.lives:
+        self.env.step(1)
+        cumulated_reward -= 1
+        reward = -1
+
       if current_lives == 0:
         terminal = True
 
       # if is_training and  current_lives < self.lives:
       #   terminal = True
 
-      if current_lives < self.lives:
-        self.env.step(1)
-
       if terminal: break
+
 
     if self.display:
       self.env.render()

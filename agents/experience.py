@@ -33,9 +33,6 @@ class Experience(object):
     self.terminals[self.current] = terminal
     self.count = max(self.count, self.current + 1)
     self.current = (self.current + 1) % self.memory_size
-    if terminal:
-      logger.debug("reward is %s in terminal state, change to -1" % reward)
-      self.rewards[self.current] = -1
 
   def sample(self):
     indexes = []
