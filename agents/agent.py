@@ -70,7 +70,7 @@ class Agent(object):
     for _ in range(self.history_length):
       self.history.add(observation)
 
-    for self.t in tqdm(range(start_t, t_max), ncols=70, initial=start_t):
+    for self.t in tqdm(range(start_t, t_max), total=t_max, ncols=70, initial=start_t):
       ep = (self.ep_end +
           max(0., (self.ep_start - self.ep_end)
             * (self.t_ep_end - max(0., self.t - self.t_learn_start)) / self.t_ep_end))
